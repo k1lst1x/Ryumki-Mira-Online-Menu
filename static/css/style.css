@@ -167,7 +167,7 @@ h2{font-size:1.6rem;margin-bottom:.7rem;margin-top:1rem;color:#63a7ff;font-weigh
   padding:8px 12px;border-radius:8px;border:1px solid #ddd;background:#f6f6f6;color:#111;
   cursor:pointer;font-weight:600;transition:filter .15s,background .15s,border-color .15s
 }
-.btn:hover{background:#eee}
+.btn:hover{background:#eee; color:#111;}
 .btn-primary{background:#111;color:#fff;border-color:#111}
 .btn-primary:hover{filter:brightness(1.05)}
 .btn-muted{background:#fafafa}
