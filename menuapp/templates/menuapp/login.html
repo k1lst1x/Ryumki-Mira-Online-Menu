@@ -1,0 +1,15 @@
+{% extends "menuapp/base.html" %}
+{% block title %}Вход{% endblock %}
+{% block content %}
+<div class="card" style="max-width:400px;margin:auto;padding:2rem;">
+  <h2 style="text-align:center;">Вход</h2>
+  <form method="post" style="display:flex;flex-direction:column;gap:1rem;">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn">Войти</button>
+  </form>
+  <p style="text-align:center;margin-top:1rem;">
+    Нет аккаунта? <a href="/signup/">Зарегистрироваться</a>
+  </p>
+</div>
+{% endblock %}

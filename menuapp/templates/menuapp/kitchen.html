@@ -1,0 +1,38 @@
+{% extends "menuapp/base.html" %}
+{% block title %}Заказы для кухни{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom:1rem;">👨‍🍳 Заказы для кухни</h2>
+
+{% if orders %}
+  {% for order in orders %}
+    <div class="card" style="margin-bottom:1.5rem;">
+      <h3>Заказ #{{ order.id }}</h3>
+      <p>👤 <strong>{{ order.user.username }}</strong></p>
+      <ul>
+        {% for item in order.orderitem_set.all %}
+          <li>{{ item.dish.name }} × {{ item.quantity }}</li>
+        {% endfor %}
+      </ul>
+
+      <div style="margin-top:1rem;">
+        {% if order.status == "new" %}
+          <!-- Кнопка принять -->
+          <a href="{% url 'mark_accept' order.id %}" class="btn" style="background:#007bff; color:#fff; padding:0.5rem 1rem; border-radius:6px; text-decoration:none;">
+            ✅ Принять в работу
+          </a>
+        {% elif order.status == "kitchen" %}
+          <!-- Кнопка готов -->
+          <a href="{% url 'mark_ready' order.id %}" class="btn" style="background:#28a745; color:#fff; padding:0.5rem 1rem; border-radius:6px; text-decoration:none;">
+            🍽️ Заказ готов
+          </a>
+        {% else %}
+          <span style="color:#28a745;font-weight:bold;">✔ Готов</span>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+{% else %}
+  <p>Пока заказов нет 👌</p>
+{% endif %}
+{% endblock %}
