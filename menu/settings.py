@@ -5,6 +5,9 @@ Django settings for menu project.
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 # =========================
 # БАЗОВОЕ
@@ -98,10 +101,22 @@ TEMPLATES = [
 # =========================
 # БАЗА ДАННЫХ
 # =========================
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("POSTGRES_DB", "menu_db"),
+        "USER": os.getenv("POSTGRES_USER", "menu_user"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "menu_pass"),
+        "HOST": os.getenv("POSTGRES_HOST", "127.0.0.1"),
+        "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        "CONN_MAX_AGE": int(os.getenv("POSTGRES_CONN_MAX_AGE", "600")),  # keep-alive
+        "OPTIONS": {},
     }
 }
 
