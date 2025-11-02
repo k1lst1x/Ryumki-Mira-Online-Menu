@@ -1,0 +1,19 @@
+{% if order %}
+  <h2>Ваш заказ №{{ order.id }}</h2>
+  <ul>
+    {% for item in order.orderitem_set.all %}
+      <li>{{ item.dish.name }} × {{ item.quantity }}</li>
+    {% endfor %}
+  </ul>
+  <p><strong>Итого: {{ order.total_price }} ₸</strong></p>
+
+  {% if order.status == "new" %}
+    <a href="{% url 'finalize_order' %}" class="finalize-btn">Отправить заказ</a>
+  {% elif order.status == "kitchen" %}
+    <p>👨‍🍳 Заказ готовится</p>
+  {% elif order.status == "ready" %}
+    <p>✅ Ваш заказ готов! Заберите его у стойки.</p>
+  {% endif %}
+{% else %}
+  <p>Корзина пуста</p>
+{% endif %}

@@ -1,0 +1,398 @@
+{% load static %}
+{% load i18n %}
+{% get_current_language as CURRENT_LANG %}
+<!DOCTYPE html>
+<html lang="{{ LANG|default:LANGUAGE_CODE|default:CURRENT_LANG|default:'ru' }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0c0e">
+  <title>{% block title %}{% trans "Наш ресторан" %}{% endblock %}</title>
+
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="icon" href="{% static 'img/favicon.ico' %}">
+  {% block extra_head %}{% endblock %}
+
+  <style>
+    /* ===== background layers (работают, если передан background_url) ===== */
+    .page-hero{ position:relative; isolation:isolate; }
+    .page-hero__bg{ position:fixed; inset:0; z-index:-2; overflow:hidden; pointer-events:none; }
+    .page-hero__bg img{
+      width:100%; height:100%; object-fit:cover; object-position:center;
+      filter:saturate(1.05) contrast(1.06) brightness(.9);
+      transform:scale(1.02);
+      will-change:transform, filter;
+    }
+    .page-hero__veil{
+      position:fixed; inset:0; z-index:-1; pointer-events:none;
+      background:
+        radial-gradient(1200px 700px at 10% 15%, rgba(0,0,0,.28), transparent 55%),
+        linear-gradient(0deg, rgba(0,0,0,.55), rgba(0,0,0,.55)),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 2px, rgba(0,0,0,0) 2px 6px);
+      backdrop-filter: blur(1.8px);
+    }
+    .page-hero--no-bg .page-hero__bg,
+    .page-hero--no-bg .page-hero__veil{ display:none; }
+
+    .content-wrap{ position:relative; z-index:1; min-height:100svh; }
+
+    /* toast */
+    #toastError{
+      position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
+      z-index:4000; display:none; max-width:min(640px,92vw);
+    }
+    #toastError.open{ display:block; }
+    #toastError[aria-hidden="true"]{ display:none !important; }
+
+    /* sr-only */
+    .sr-only{
+      position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+      clip:rect(0,0,0,0); white-space:nowrap; border:0;
+    }
+  </style>
+</head>
+<body>
+
+  <noscript>
+    <div style="background:#221; color:#fff; padding:.75rem; text-align:center;">
+      {% trans "Для корректной работы сайта включите JavaScript." %}
+    </div>
+  </noscript>
+
+  <!-- ===== Двухрядный навбар ===== -->
+  <nav class="navbar2" role="navigation" aria-label="{% trans 'Основная навигация' %}">
+    <!-- строка 1: логотип + соцсети + язык -->
+    <div class="navbar-top">
+      <a href="{% url 'home' %}" class="logo">
+        <img src="{% static 'img/logo.jpg' %}" alt="{% trans 'Логотип' %}" class="logo-img">
+        <span class="logo-text">{% trans "Рюмки на Мира" %}</span>
+      </a>
+
+      <div class="navbar-right">
+        <div class="messengers">
+          {% with BRAND_CONTACTS as C %}
+            {% if C.whatsapp_phone %}
+              <a class="social-link"
+                 href="https://wa.me/{{ C.whatsapp_phone|cut:'+'|cut:' ' }}"
+                 target="_blank" rel="noopener">
+                <img src="{% static 'img/whatsupp.png' %}" alt="WhatsApp">
+              </a>
+            {% endif %}
+            <a class="social-link"
+               href="{{ C.instagram_url|default:'https://www.instagram.com/ryumki_mira/' }}"
+               target="_blank" rel="noopener">
+              <img src="{% static 'img/inst.png' %}" alt="Instagram">
+            </a>
+            {% if C.dgis_url %}
+              <a class="social-link" href="{{ C.dgis_url }}" target="_blank" rel="noopener">
+                <img src="{% static 'img/2gis.png' %}" alt="{% trans 'Карта' %}">
+              </a>
+            {% endif %}
+          {% endwith %}
+        </div>
+
+        <div class="lang-select" aria-label="Выбор языка">
+          <button class="lang-btn" id="langBtn">RU</button>
+          <ul class="lang-menu" id="langMenu">
+            <li><a href="/" data-lang="ru">RU</a></li>
+            <li><a href="/kk/" data-lang="kk">KK</a></li>
+            <li><a href="/en/" data-lang="en">EN</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- строка 2: категории (горизонтальный скролл) -->
+    <div class="navbar-cats">
+      <ul class="nav-cats" id="navCats">
+        {% for cat in nav_categories %}
+          <li>
+            <a href="{% url 'category_detail' cat.slug %}"
+               class="cat-link"
+               {% if cat.is_21plus %}data-requires-age="21"{% endif %}>
+              {{ cat.name }}
+              {% if cat.is_21plus %}<span class="badge-21">21+</span>{% endif %}
+            </a>
+          </li>
+        {% empty %}{% endfor %}
+      </ul>
+        <div class="scroll-hint left"></div>
+        <div class="scroll-hint right"></div>
+    </div>
+  </nav>
+
+  <!-- ===== Фон и контент =====
+  <div class="page-hero {% if not background_url %}page-hero--no-bg{% endif %}">
+    {% if background_url %}
+      <div class="page-hero__bg" aria-hidden="true">
+        <img src="{{ background_url }}" alt="">
+      </div>
+      <div class="page-hero__veil" aria-hidden="true"></div>
+    {% endif %} -->
+
+    <main class="container content-wrap" id="main">
+      {% if messages %}
+        <div class="messages">
+          {% for message in messages %}
+            <div class="msg msg-{{ message.tags }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- overlay под off-canvas корзину (если понадобится) -->
+  <div id="cartOverlay" class="cart-overlay" aria-hidden="true"></div>
+
+  <!-- ===== Глобальный toast ошибок (скрыт) ===== -->
+  <div id="toastError" class="toast-error" aria-live="assertive" aria-hidden="true">
+    <div class="toast-card">
+      <div class="toast-text" id="toastText">{% trans "Что-то пошло не так… Попробуйте снова" %}</div>
+      <div class="toast-actions">
+        <button id="toastRetry" type="button" class="btn">{% trans "Повторить попытку" %}</button>
+        <button id="toastClose" type="button" class="btn btn-muted">{% trans "Закрыть" %}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Модалка 21+ ===== -->
+  <div id="ageGate" class="age-gate-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ageGateTitle">
+    <div class="age-gate-card" role="document">
+      <h3 class="age-gate-title" id="ageGateTitle">{% trans "Меню 21+" %}</h3>
+      <p class="age-gate-text">{% trans "Продолжая, вы подтверждаете, что вам исполнился 21 год." %}</p>
+      <form method="post" action="{% url 'age_confirm' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="">
+        <div class="age-gate-actions">
+          <button type="submit" class="btn btn-primary">{% trans "Мне 21+" %}</button>
+          <button type="button" class="btn btn-muted" id="btnNo21">{% trans "Мне нет 21" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== JS ===== -->
+  <script>
+    // локализованные строки для JS
+    const I18N = {
+      errorCommon: "{% trans 'Что-то пошло не так… Попробуйте снова' as t %}{{ t|escapejs }}",
+      errorNetwork: "{% trans 'Не удаётся связаться с сервером… Попробуйте снова' as t %}{{ t|escapejs }}",
+      errorAgeConfirm: "{% trans 'Не удалось подтвердить возраст. Попробуйте ещё раз.' as t %}{{ t|escapejs }}",
+    };
+
+    // Подсветка активной кнопки языка (RU без префикса)
+    (function(){
+      const cur = (location.pathname.split('/')[1] || 'ru').toLowerCase();
+      document.querySelectorAll('.btn-lang').forEach(a => {
+        const code = (a.dataset.lang || '').toLowerCase();
+        if ((cur && cur === code) || (!['kk','en'].includes(cur) && code === 'ru')) {
+          a.classList.add('active');
+        }
+      });
+    })();
+
+    // off-canvas корзина (пустой хелпер — не мешает макету)
+    const body = document.body;
+    const panel = document.getElementById('cartPanel');
+    const overlay = document.getElementById('cartOverlay');
+    function openCart(){ if(!panel||!overlay)return; panel.classList.add('open'); overlay.classList.add('open'); panel.setAttribute('aria-hidden','false'); overlay.setAttribute('aria-hidden','false'); body.style.overflow='hidden'; }
+    function closeCart(){ if(!panel||!overlay)return; panel.classList.remove('open'); overlay.classList.remove('open'); panel.setAttribute('aria-hidden','true'); overlay.setAttribute('aria-hidden','true'); body.style.overflow=''; }
+    function toggleCart(){ if(!panel||!overlay)return; panel.classList.contains('open')?closeCart():openCart(); }
+    overlay && overlay.addEventListener('click', closeCart);
+    document.addEventListener('keydown', e => { if (e.key==='Escape' && panel && panel.classList.contains('open')) closeCart(); });
+
+    // toast + safeFetch
+    (function(){
+      const toast=document.getElementById('toastError');
+      const text=document.getElementById('toastText');
+      const btnRetry=document.getElementById('toastRetry');
+      const btnClose=document.getElementById('toastClose');
+      let retryCb=null;
+
+      window.showErrorToast=function(message=I18N.errorCommon,onRetry=null){
+        if(text) text.textContent=message;
+        retryCb=typeof onRetry==='function'?onRetry:null;
+        toast?.classList.add('open');
+        toast?.setAttribute('aria-hidden','false');
+      };
+      function closeToast(){
+        toast?.classList.remove('open');
+        toast?.setAttribute('aria-hidden','true');
+      }
+      btnRetry?.addEventListener('click',()=>{ const cb=retryCb; closeToast(); retryCb=null; try{ cb && cb(); }catch(_){} });
+      btnClose?.addEventListener('click',closeToast);
+      toast?.addEventListener('click',e=>{ if(e.target===toast) closeToast(); });
+
+      const ignore = (e)=>/ResizeObserver|favicon\.ico|Blocked a frame/i.test(String(e?.message||e?.reason||""));
+      window.addEventListener('error',(e)=>{ if(!ignore(e)) console.error(e); }, true);
+      window.addEventListener('unhandledrejection',(e)=>{ if(!ignore(e)) console.error(e); }, true);
+
+      window.safeFetch=async function(url,options,{onRetry}={}){
+        try{
+          const res=await fetch(url,options);
+          if(!res.ok) throw new Error('Bad status '+res.status);
+          return res;
+        }catch(e){
+          console.error(e);
+          showErrorToast(I18N.errorNetwork,()=>{ if(typeof onRetry==='function') onRetry(); });
+          throw e;
+        }
+      };
+    })();
+
+    // ===== age gate 21+ с фокус-трапом =====
+    (function(){
+      const modal = document.getElementById('ageGate');
+      const form  = modal ? modal.querySelector('form') : null;
+      const nextInput = form ? form.querySelector('input[name="next"]') : null;
+      const btnNo21 = modal ? modal.querySelector('#btnNo21') : null;
+      let ageNextUrl = null;
+      let prevFocusEl = null;
+
+      const hasAgeCookie = () =>
+        document.cookie.split(';').some(c => c.trim().startsWith('AGE_VERIFIED_21=1'));
+
+      const focusableSel = 'a[href], area[href], input:not([disabled]), select:not([disabled]), '+
+                           'textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+      function trapFocus(e){
+        if (!modal || modal.getAttribute('aria-hidden') === 'true') return;
+        const nodes = modal.querySelectorAll(focusableSel);
+        if (!nodes.length) return;
+        const first = nodes[0];
+        const last  = nodes[nodes.length - 1];
+        if (e.key !== 'Tab') return;
+        if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+      }
+
+      function openAgeGate(){
+        if (!modal) return;
+        prevFocusEl = document.activeElement;
+        if (nextInput) nextInput.value = ageNextUrl || location.href;
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden','false');
+        document.body.style.overflow='hidden';
+        modal.querySelector(focusableSel)?.focus();
+        document.addEventListener('keydown', trapFocus, true);
+      }
+      function closeAgeGate(){
+        if (!modal) return;
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden','true');
+        document.body.style.overflow='';
+        document.removeEventListener('keydown', trapFocus, true);
+        try{ prevFocusEl?.focus(); }catch(_){}
+      }
+      const applyBlur   = ()=>{ document.documentElement.classList.add('age-locked'); document.body.classList.add('age-locked'); };
+      const removeBlur  = ()=>{ document.documentElement.classList.remove('age-locked'); document.body.classList.remove('age-locked'); };
+
+      if (!hasAgeCookie()) applyBlur();
+
+      document.addEventListener('click', (e) => {
+        if (hasAgeCookie()) return;
+        const trigger = e.target.closest('[data-requires-age="21"], .requires-21-trigger');
+        if (!trigger) return;
+        ageNextUrl = trigger.getAttribute('href') || trigger.dataset.next || location.href;
+        e.preventDefault();
+        openAgeGate();
+      }, { capture: true });
+
+      btnNo21?.addEventListener('click', (e) => {
+        e.preventDefault();
+        applyBlur();
+        closeAgeGate();
+      });
+
+      form?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = new FormData(form);
+        if (!data.get('next')) data.set('next', location.href);
+        const csrf = form.querySelector('input[name="csrfmiddlewaretoken"]')?.value;
+
+        try {
+          await fetch(form.action, {
+            method: 'POST',
+            body: data,
+            headers: csrf ? { 'X-CSRFToken': csrf } : {}
+          });
+          closeAgeGate();
+          removeBlur();
+        } catch (err) {
+          console.error(err);
+          window.showErrorToast?.(I18N.errorAgeConfirm);
+        }
+      });
+
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAgeGate(); });
+    })();
+
+    const langBtn = document.getElementById('langBtn');
+    const langMenu = document.getElementById('langMenu');
+
+    // === Определяем текущий язык по URL и обновляем кнопку ===
+    (function() {
+      const langBtn = document.getElementById('langBtn');
+      const path = window.location.pathname.split('/')[1].toLowerCase();
+      let currentLang;
+
+      if (['kk', 'en'].includes(path)) currentLang = path;
+      else currentLang = 'ru'; // по умолчанию — RU
+
+      langBtn.textContent = currentLang.toUpperCase(); // обновляем текст кнопки
+    })();
+
+    langBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      langMenu.style.display = langMenu.style.display === 'block' ? 'none' : 'block';
+    });
+
+    langMenu.addEventListener('click', (e) => {
+      if (e.target.tagName === 'A') {
+        const selectedLang = e.target.dataset.lang.toUpperCase();
+        langBtn.textContent = selectedLang; // обновляем текст кнопки
+        window.location.href = e.target.href; // переходим по ссылке
+        langMenu.style.display = 'none';
+      }
+    });
+
+    document.addEventListener('click', () => {
+      langMenu.style.display = 'none';
+    });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const nav = document.getElementById('navCats');
+    const leftHint = document.querySelector('.scroll-hint.left');
+    const rightHint = document.querySelector('.scroll-hint.right');
+
+    function updateHints() {
+      const maxScroll = nav.scrollWidth - nav.clientWidth;
+      const scrollLeft = nav.scrollLeft;
+
+      // Левую показываем, если не в начале
+      if (scrollLeft > 5) {
+        leftHint.classList.add('visible');
+      } else {
+        leftHint.classList.remove('visible');
+      }
+
+      // Правую показываем, если не в конце
+      if (scrollLeft < maxScroll - 5) {
+        rightHint.classList.add('visible');
+      } else {
+        rightHint.classList.remove('visible');
+      }
+    }
+
+    if (nav.scrollWidth > nav.clientWidth) {
+      updateHints();
+      nav.addEventListener('scroll', updateHints);
+      window.addEventListener('resize', updateHints);
+    }
+  });
+  </script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

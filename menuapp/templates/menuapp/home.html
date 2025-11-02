@@ -1,0 +1,135 @@
+    {% extends "menuapp/base.html" %}
+    {% load static %}
+    {% load i18n %}
+    {% block title %}{% trans "Меню ресторана" %}{% endblock %}
+
+    {% block content %}
+    <div class="container">
+
+      <!-- 🔥 Популярные блюда -->
+      <h2>{% trans "Золотой штамп вкуса" %}</h2>
+      <p class="section-subtitle">{% trans "То, что выбирают чаще всего" %}</p>
+
+      <div class="scroll-container">
+        <div class="scroll-row" id="popularRow" role="list" aria-label="{% trans 'Золотой штамп вкуса' %}">
+          {% for d in popular_dishes %}
+            {% if not d.category.is_21plus %}
+              <a class="popular-card popular-link" role="listitem">
+                <div class="popular-img">
+                  {% if d.image %}
+                    <img src="{{ d.image.url }}" alt="{{ d.name }}">
+                  {% else %}
+                    <img src="{% static 'img/placeholder-dish.jpg' %}" alt="{{ d.name }}">
+                  {% endif %}
+                </div>
+                <h3 class="popular-title">{{ d.name }}</h3>
+                <span class="popular-price">{{ d.base_price }} ₸</span>
+              </a>
+            {% endif %}
+          {% empty %}
+            <span class="muted">{% trans "Пока нет популярных блюд." %}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <hr class="section-sep">
+
+      <!-- 📖 Всё меню — паспортные карточки -->
+      <h2>{% trans "Глобус Вкуса" %}</h2>
+      <p class="section-subtitle">{% trans "Путешествие начинается здесь. Листай вниз." %}</p>
+
+      {% for category in categories %}
+        <h3 class="category-heading">
+          {{ category.name }}
+          {% if category.is_21plus %}
+            <span class="badge-21">21+</span>
+          {% endif %}
+        </h3>
+
+        <div class="passport-grid">
+          {% for dish in category.dishes.all %}
+            {% if dish.is_available %}
+              {% with is21=category.is_21plus %}
+              <a class="menu-link {% if is21 %}requires-21{% endif %}"
+                 {% if is21 %}data-requires-age="21"{% endif %}>
+
+                <article class="passport-card"
+                         style="--passport:url('{% if dish.passport_bg %}{{ dish.passport_bg.url }}{% else %}{% static 'img/passport-page.png' %}{% endif %}')">
+
+                  <!-- левая часть: фото блюда поверх паспорта -->
+                  <div class="pc-photo {% if is21 %}requires-21-visual{% endif %}">
+                    {% if dish.image %}
+                      <img src="{{ dish.image.url }}" alt="{{ dish.name }}">
+                    {% else %}
+                      <img src="{% static 'img/placeholder-dish.jpg' %}" alt="{{ dish.name }}">
+                    {% endif %}
+                  </div>
+
+                  <!-- правая часть: название, описание, низ: [цена] ...... [21+] -->
+                  <div class="pc-info">
+                    <h3 class="pc-title ellipsis-2">{{ dish.name }}</h3>
+                    <p class="pc-desc">
+                      {% if dish.description %}{{ dish.description }}{% else %}{% trans "Описание пока отсутствует" %}{% endif %}
+                    </p>
+
+                    <div class="pc-meta">
+                      <span class="pc-price">{{ dish.base_price }} ₸</span>
+                      {% if is21 %}
+                        <span class="badge-21 pc-badge" style="margin-left:auto">21+</span>
+                      {% endif %}
+                    </div>
+                  </div>
+
+                </article>
+              </a>
+              {% endwith %}
+            {% endif %}
+          {% empty %}
+            <p class="muted">{% trans "В этой категории пока нет блюд." %}</p>
+          {% endfor %}
+        </div>
+      {% endfor %}
+
+    </div>
+
+    <script>
+    (function () {
+      const row = document.getElementById('popularRow');
+      if (!row) return;
+
+      const cloneChildrenOnce = () => {
+        if (row.dataset.loopReady) return;
+        row.dataset.loopReady = '1';
+        const kids = Array.from(row.children);
+        kids.forEach(k => row.appendChild(k.cloneNode(true)));
+      };
+
+      cloneChildrenOnce();
+      let half = row.scrollWidth / 2;
+
+      function normalize() {
+        if (row.scrollLeft >= half) row.scrollLeft -= half;
+        else if (row.scrollLeft < 0) row.scrollLeft += half;
+      }
+
+      row.addEventListener('scroll', normalize, { passive: true });
+      window.addEventListener('resize', () => { half = row.scrollWidth / 2; });
+
+      let rafId = null;
+      function tick() {
+        row.scrollLeft += 1;
+        normalize();
+        rafId = requestAnimationFrame(tick);
+      }
+      function startAuto() { if (!rafId) rafId = requestAnimationFrame(tick); }
+      function stopAuto()  { if (rafId) cancelAnimationFrame(rafId), rafId = null; }
+
+      startAuto();
+
+      row.addEventListener('mouseenter', stopAuto);
+      row.addEventListener('mouseleave', () => setTimeout(startAuto, 800));
+      row.addEventListener('touchstart', stopAuto, { passive: true });
+      row.addEventListener('touchend',   () => setTimeout(startAuto, 800), { passive: true });
+    })();
+    </script>
+    {% endblock %}

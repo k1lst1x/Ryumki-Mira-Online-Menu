@@ -1,0 +1,69 @@
+{% extends "menuapp/base.html" %}
+{% load static %}
+{% load i18n %}
+{% load l10n %}
+
+{% block title %}{{ category.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <!-- Заголовок и описание категории -->
+  <h2 class="category-heading">
+    {{ category.name }}
+    {% if category.is_21plus %}<span class="badge-21">21+</span>{% endif %}
+  </h2>
+  <p class="section-subtitle">
+    {% if category.description %}{{ category.description }}{% else %}{% trans "Описание скоро появится" %}{% endif %}
+  </p>
+
+  <!-- Сетка блюд этой категории в «паспортном» стиле как на хоум -->
+  <div class="passport-grid" role="list" aria-label="{{ category.name }}">
+    {% for dish in category.dishes.all %}
+      {% if dish.is_available %}
+        {# категория 21+ — блюдо закрыто до подтверждения #}
+        <a class="menu-link {% if category.is_21plus %}requires-21{% endif %}"
+ 
+           {% if category.is_21plus %}data-requires-age="21"{% endif %}
+           role="listitem">
+
+          <article class="passport-card"
+                   style="--passport:url('{% if dish.passport_bg %}{{ dish.passport_bg.url }}{% else %}{% static 'img/passport-page.png' %}{% endif %}')">
+
+            <!-- Фото блюда слева поверх «паспортной» подложки -->
+            <div class="pc-photo {% if category.is_21plus %}requires-21-visual{% endif %}">
+              {% if dish.image %}
+                <img src="{{ dish.image.url }}" alt="{{ dish.name }}" loading="lazy">
+              {% else %}
+                <img src="{% static 'img/placeholder-dish.jpg' %}" alt="{{ dish.name }}" loading="lazy">
+              {% endif %}
+            </div>
+
+            <!-- Информация о блюде справа -->
+            <div class="pc-info">
+              <h3 class="pc-title ellipsis-2">{{ dish.name }}</h3>
+              <p class="pc-desc">
+                {% if dish.description %}{{ dish.description }}{% else %}{% trans "Описание отсутствует" %}{% endif %}
+              </p>
+
+              <div class="pc-meta">
+                <span class="pc-price">
+                  <span class="sum">{{ dish.base_price|localize }}</span>
+                  <span class="cur">₸</span>
+                </span>
+                {% if category.is_21plus %}
+                  <span class="badge-21 pc-badge" style="margin-left:auto">21+</span>
+                {% endif %}
+              </div>
+            </div>
+
+          </article>
+        </a>
+      {% endif %}
+    {% empty %}
+      <p class="muted">{% trans "В этой категории пока нет блюд." %}</p>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
