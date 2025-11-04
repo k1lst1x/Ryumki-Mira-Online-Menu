@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('menuapp', '0001_add_i18n_fields'),
+        ('menuapp', '0002_add_i18n_fields'),
     ]
 
     operations = [
