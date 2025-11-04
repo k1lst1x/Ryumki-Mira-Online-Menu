@@ -187,7 +187,7 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 BRAND_CONTACTS = {
     "whatsapp_phone": "+77024292219",
     "instagram_url": "https://www.instagram.com/ryumki_mira/",
-    "dgis_url": "https:/2gis.kz/almaty/geo/70000001104426373",
+    "dgis_url": "https://2gis.kz/almaty/geo/70000001104426373",
 }
 
 # =========================
